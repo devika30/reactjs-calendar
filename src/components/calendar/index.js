@@ -1,7 +1,7 @@
 import React, { useState, Fragment, useEffect } from "react";
 import moment from "moment";
 import { convert } from "../../utils/unixToDate";
-import data from "../../data.json";
+import jsonData from "../../data.json";
 const Calendar = (props) => {
   //Date State
   const [state, setState] = useState({
@@ -10,6 +10,7 @@ const Calendar = (props) => {
   });
   //State for events of any day
   const [events, setEvents] = useState([]);
+  const [data, setData] = useState([]);
 
   //Returns arr of days of week eg. [Mon,Tues,Wed..]
   let weekdaysShort = [
@@ -17,26 +18,49 @@ const Calendar = (props) => {
     moment.weekdaysShort()[0],
   ];
 
+  //Format json data
+  const formatData = () => {
+    let newArr = [];
+    jsonData.forEach((d) => {
+      const isPresent = newArr.findIndex((el) => d.date?.time == el?.date);
+      if (isPresent == -1) {
+        newArr.push({
+          date: d.date?.time,
+          events: [d],
+        });
+      } else {
+        newArr[isPresent].events.push(d);
+      }
+    });
+    setData(newArr);
+    getEvents(newArr, moment().unix());
+  };
+
   //Filter events after computing unix date
-  const getEvents = (data, date) => {
-    const eventData = data.filter((el) => {
-      const readableDate = convert(el?.date?.time);
-      const month = getCurrentMonth();
-      const year = getCurrentYear();
-      const day = date || getCurrentDate();
+  const getEvents = (dataValue, date, isUnix = true) => {
+    if (!isUnix) {
+      const month = date?.month;
+      const year = date?.year;
+      date = new Date(`${year}.${month}.${date.date}`).getTime() / 1000;
+    }
+    const eventData = dataValue.filter((el) => {
+      const readableDate = convert(el?.date);
+      const unixDate = convert(date);
+
       if (
-        readableDate.year == year &&
-        readableDate.month == month &&
-        readableDate.date == day
-      )
+        unixDate.year == readableDate.year &&
+        unixDate.month == readableDate.month &&
+        unixDate.date == readableDate.date
+      ) {
         return true;
+      }
     });
     setEvents(eventData);
   };
 
   useEffect(() => {
-    getEvents(data, state.dateContext.format("D"));
-  }, [state.dateContext]);
+    formatData();
+  }, []);
 
   //Function returns the current year value
   const getCurrentYear = () => state.dateContext.format("Y");
@@ -57,22 +81,32 @@ const Calendar = (props) => {
   //Function to change month and get that months details
   const changeMonth = (direction) => {
     let dateContext = { ...state.dateContext };
+
     direction === "next"
       ? (dateContext = moment(dateContext).add(1, "month"))
       : (dateContext = moment(dateContext).subtract(1, "month"));
-    const day = dateContext.format("D");
-    getEvents(data, day);
+    const day = {
+      date: getCurrentDate(),
+      month: dateContext.format("MMMM"),
+      year: getCurrentYear(),
+    };
+    getEvents(data, day, false);
     setState({ selectedDay: null, dateContext });
   };
 
   //Function to set selected date. For same date , toggle between date/null
-  const selectDate = (day) => {
-    if (day == state.selectedDay) {
+  const selectDate = (date) => {
+    if (date == state.selectedDay) {
       setState((prevState) => ({ ...prevState, selectedDay: null }));
     } else {
-      setState((prevState) => ({ ...prevState, selectedDay: day }));
+      setState((prevState) => ({ ...prevState, selectedDay: date }));
     }
-    getEvents(data, day);
+    const day = {
+      date: date,
+      month: getCurrentMonth(),
+      year: getCurrentYear(),
+    };
+    getEvents(data, day, false);
   };
 
   //Pushing blank values to array to format the calendar
@@ -183,8 +217,7 @@ const Calendar = (props) => {
               events.length > 0 &&
               events.map((event, key) => (
                 <div key={key * 2}>
-                  <b>{key + 1}.</b>&nbsp;Mood : {event?.mood} &nbsp; Unix :{" "}
-                  {event?.date?.time}
+                  <b>{key + 1}.</b>&nbsp;Date : {event?.date}
                 </div>
               ))}
           </div>
