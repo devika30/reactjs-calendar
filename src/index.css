@@ -9,14 +9,19 @@ body {
   margin-top: 30px;
 }
 
+.events-today,
 .calendar-container {
   background: #e6e7ee;
   box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #fff !important;
   border-radius: 8px !important;
   width: 100%;
+}
+.events-today {
+  padding: 16px;
+}
+.calendar-container {
   table-layout: fixed;
 }
-
 th,
 td {
   padding: 10px;
@@ -53,4 +58,10 @@ button:focus {
 .header {
   color: #2d4cc8;
   font-weight: 700;
+}
+
+@media only screen and (max-width: 600px) {
+  .events-today {
+    margin-top: 16px;
+  }
 }

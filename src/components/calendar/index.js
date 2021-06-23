@@ -1,16 +1,42 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useEffect } from "react";
 import moment from "moment";
-
+import { convert } from "../../utils/unixToDate";
+import data from "../../data.json";
 const Calendar = (props) => {
+  //Date State
   const [state, setState] = useState({
     dateContext: moment(),
     selectedDay: null,
   });
+  //State for events of any day
+  const [events, setEvents] = useState([]);
 
+  //Returns arr of days of week eg. [Mon,Tues,Wed..]
   let weekdaysShort = [
     ...moment.weekdaysShort().slice(1),
     moment.weekdaysShort()[0],
   ];
+
+  //Filter events after computing unix date
+  const getEvents = (data, date) => {
+    const eventData = data.filter((el) => {
+      const readableDate = convert(el?.date?.time);
+      const month = getCurrentMonth();
+      const year = getCurrentYear();
+      const day = date || getCurrentDate();
+      if (
+        readableDate.year == year &&
+        readableDate.month == month &&
+        readableDate.date == day
+      )
+        return true;
+    });
+    setEvents(eventData);
+  };
+
+  useEffect(() => {
+    getEvents(data, state.dateContext.format("D"));
+  }, [state.dateContext]);
 
   //Function returns the current year value
   const getCurrentYear = () => state.dateContext.format("Y");
@@ -22,7 +48,7 @@ const Calendar = (props) => {
   const daysInMonth = () => state.dateContext.daysInMonth();
 
   //Function returns the current day value
-  const currentDay = () => state.dateContext.format("D");
+  const getCurrentDate = () => state.dateContext.format("D");
 
   //Retuns the number of blank spaces before a month starts
   const firstDayOfMonth = () =>
@@ -34,7 +60,9 @@ const Calendar = (props) => {
     direction === "next"
       ? (dateContext = moment(dateContext).add(1, "month"))
       : (dateContext = moment(dateContext).subtract(1, "month"));
-    setState((prevState) => ({ ...prevState, dateContext }));
+    const day = dateContext.format("D");
+    getEvents(data, day);
+    setState({ selectedDay: null, dateContext });
   };
 
   //Function to set selected date. For same date , toggle between date/null
@@ -44,6 +72,7 @@ const Calendar = (props) => {
     } else {
       setState((prevState) => ({ ...prevState, selectedDay: day }));
     }
+    getEvents(data, day);
   };
 
   //Pushing blank values to array to format the calendar
@@ -56,7 +85,7 @@ const Calendar = (props) => {
   //Pushing dates in arr after checking conditions if that date is selected or is the current date.
   let day = [];
   for (let d = 1; d <= daysInMonth(); d++) {
-    let className = d == currentDay() ? " current-day " : "";
+    let className = d == getCurrentDate() ? " current-day " : "";
     let selectedClass = d == state.selectedDay ? " selected-day " : "";
     day.push(
       <td
@@ -119,7 +148,6 @@ const Calendar = (props) => {
       </Fragment>
     );
   };
-
   //Mapping all days Of Week
   const daysOfWeek = weekdaysShort.map((day) => <td key={day}>{day}</td>);
 
@@ -146,6 +174,20 @@ const Calendar = (props) => {
               {days}
             </tbody>
           </table>
+        </div>
+        <div className="col-sm-12 col-md-8 col-lg-6">
+          <div className="events-today">
+            <h6 className="fw-bold">Events will be listed here !</h6>
+            {events && events.length == 0 && <div>No Events today</div>}
+            {events &&
+              events.length > 0 &&
+              events.map((event, key) => (
+                <div key={key * 2}>
+                  <b>{key + 1}.</b>&nbsp;Mood : {event?.mood} &nbsp; Unix :{" "}
+                  {event?.date?.time}
+                </div>
+              ))}
+          </div>
         </div>
       </div>
     </div>
