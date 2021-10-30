@@ -1,5 +1,4 @@
 ### ReactJs Calendar
-
 #### Installation guide 🚀
 
 ```bash
