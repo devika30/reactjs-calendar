@@ -8,3 +8,7 @@ cd reactjs-calendar
 npm install
 npm start
 ```
+
+### License
+
+MIT
